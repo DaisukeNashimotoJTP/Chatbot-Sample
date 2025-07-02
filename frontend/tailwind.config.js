@@ -32,6 +32,15 @@ module.exports = {
           800: '#1f2937',
           900: '#111827',
         },
+        slack: {
+          sidebar: '#f8f9fa',
+          'sidebar-dark': '#3f0f40',
+          'sidebar-text': '#1d1c1d',
+          'sidebar-text-muted': '#616061',
+          'channel-active': '#1264a3',
+          'channel-hover': '#350d36',
+          'message-hover': '#f8f8f8',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui'],

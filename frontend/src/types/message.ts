@@ -21,6 +21,17 @@ export interface Message {
   reaction_counts?: Record<string, number>;
   user_reactions?: string[];
   
+  // Populated user object
+  user?: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url?: string;
+  };
+  
+  // Populated reactions array
+  reactions?: MessageReaction[];
+  
   created_at: string;
   updated_at: string;
 }

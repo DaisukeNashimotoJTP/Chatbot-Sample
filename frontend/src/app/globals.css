@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* カスタムスタイル */
+@layer base {
+  html {
+    font-family: system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  /* Slack風のサイドバースタイル */
+  .bg-slack-sidebar {
+    @apply bg-gray-100;
+  }
+  
+  /* カスタムスクロールバー */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+  
+  /* メッセージ入力エリアのスタイル */
+  .message-input {
+    @apply w-full border border-gray-300 rounded-lg px-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none;
+  }
+  
+  /* チャンネルリストのアイテム */
+  .channel-item {
+    @apply flex items-center w-full text-left px-2 py-1 rounded text-sm text-gray-700 hover:bg-gray-100;
+  }
+  
+  .channel-item.active {
+    @apply bg-blue-100 text-blue-900;
+  }
+  
+  /* メッセージバブル */
+  .message-bubble {
+    @apply px-6 py-2 hover:bg-gray-50 group;
+  }
+  
+  /* ローディングスピナー */
+  .loading-spinner {
+    @apply animate-spin rounded-full border-b-2 border-blue-600;
+  }
+}
+
+@layer utilities {
+  /* テキストの省略 */
+  .text-ellipsis-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .text-ellipsis-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* アニメーション */
+  .fade-in {
+    animation: fadeIn 0.2s ease-in-out;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* フォーカス状態 */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+  
+  /* ホバー効果 */
+  .hover-lift {
+    @apply hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200;
+  }
+}
+
+/* ダークモード対応（将来的に） */
+@media (prefers-color-scheme: dark) {
+  .dark {
+    @apply bg-gray-900 text-gray-100;
+  }
+  
+  .dark .bg-slack-sidebar {
+    @apply bg-gray-800;
+  }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .message-bubble {
+    @apply px-4 py-2;
+  }
+  
+  .channel-item {
+    @apply px-3 py-2;
+  }
+}
+
+/* プリント時のスタイル */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    @apply bg-white text-black;
+  }
+}

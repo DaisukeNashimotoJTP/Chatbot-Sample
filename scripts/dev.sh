@@ -163,6 +163,14 @@ setup() {
 start() {
     log_info "開発環境を起動しています..."
     
+    # ポート3000が使用されているかチェック
+    if ss -tulpn | grep ":3000.*LISTEN" >/dev/null 2>&1; then
+        log_warning "ポート3000は既に使用されています。既存のプロセスを停止します..."
+        pkill -f "next dev" || true
+        pkill -f "next-server" || true
+        sleep 2
+    fi
+    
     # データベース起動
     docker-compose up -d postgres redis
     
@@ -181,7 +189,8 @@ start() {
     if [ -d "frontend" ]; then
         log_info "フロントエンドを起動しています..."
         cd frontend
-        nohup npm run dev > ../logs/frontend.log 2>&1 &
+        # ポート3000を明示的に指定
+        nohup npx next dev -p 3000 > ../logs/frontend.log 2>&1 &
         echo $! > ../logs/frontend.pid
         cd ..
         log_success "フロントエンドを起動しました (PID: $(cat logs/frontend.pid))"
@@ -208,6 +217,24 @@ stop() {
         kill $(cat logs/frontend.pid) 2>/dev/null || true
         rm -f logs/frontend.pid
         log_success "フロントエンドを停止しました"
+    fi
+    
+    # 残っているNext.jsプロセスを強制終了
+    log_info "残存するNext.jsプロセスをチェックしています..."
+    if pgrep -f "next dev" > /dev/null 2>&1; then
+        pkill -f "next dev" || true
+        log_success "Next.js開発サーバーを停止しました"
+    fi
+    
+    if pgrep -f "next-server" > /dev/null 2>&1; then
+        pkill -f "next-server" || true
+        log_success "Next.jsサーバープロセスを停止しました"
+    fi
+    
+    # Node.jsプロセスもチェック（frontend ディレクトリから起動されたもの）
+    if pgrep -f "node.*frontend.*next" > /dev/null 2>&1; then
+        pkill -f "node.*frontend.*next" || true
+        log_success "フロントエンドNode.jsプロセスを停止しました"
     fi
     
     # Docker サービス停止

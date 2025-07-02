@@ -18,14 +18,14 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # Database
-    DATABASE_URL: str = Field(..., description="PostgreSQL database URL")
+    DATABASE_URL: str = Field(default="postgresql+asyncpg://chat_user:chat_password@localhost:5432/chat_db", description="PostgreSQL database URL")
     TEST_DATABASE_URL: Optional[str] = None
     
     # Redis
     REDIS_URL: str = Field(default="redis://localhost:6379")
     
     # Security
-    SECRET_KEY: str = Field(..., description="Secret key for JWT encoding")
+    SECRET_KEY: str = Field(default="your-secret-key-here-change-in-production", description="Secret key for JWT encoding")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
@@ -74,7 +74,6 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "json"
     
     class Config:
-        env_file = ".env"
         case_sensitive = True
         extra = "ignore"
 
@@ -83,6 +82,11 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
+
+
+def clear_settings_cache():
+    """Clear the settings cache."""
+    get_settings.cache_clear()
 
 
 # Global settings instance
