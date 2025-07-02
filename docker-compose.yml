@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: chat_postgres
+    environment:
+      POSTGRES_DB: chat_db
+      POSTGRES_USER: chat_user
+      POSTGRES_PASSWORD: chat_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_user -d chat_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chat_network
+
+  postgres_test:
+    image: postgres:15-alpine
+    container_name: chat_postgres_test
+    environment:
+      POSTGRES_DB: chat_test_db
+      POSTGRES_USER: chat_user
+      POSTGRES_PASSWORD: chat_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5433:5432"
+    profiles: ["test"]
+    networks:
+      - chat_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: chat_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chat_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chat_backend
+    volumes:
+      - ./backend:/app
+      - /app/venv
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://chat_user:chat_password@postgres:5432/chat_db
+      - REDIS_URL=redis://redis:6379
+      - DEBUG=true
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - CORS_ORIGINS=["http://localhost:3000", "http://frontend:3000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - chat_network
+    profiles: ["full"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chat_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/v1
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/v1/ws
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=dev-nextauth-secret
+      - NEXT_PUBLIC_APP_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - chat_network
+    profiles: ["full"]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: chat_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@chat.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - chat_network
+    profiles: ["tools"]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  chat_network:
+    driver: bridge
