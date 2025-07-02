@@ -7,7 +7,7 @@ interface AuthActions {
   login: (credentials: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
+  refreshAccessToken: () => Promise<void>;
   getCurrentUser: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      refreshToken: async () => {
+      refreshAccessToken: async () => {
         try {
           const { refreshToken } = get();
           if (!refreshToken) {
@@ -141,10 +141,19 @@ export const useAuthStore = create<AuthStore>()(
 
           set({
             user,
+            isAuthenticated: true,
             isLoading: false,
           });
         } catch (error: any) {
+          // If getCurrentUser fails, the token is invalid
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          
           set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            isAuthenticated: false,
             isLoading: false,
             error: error.message || 'Failed to get user info',
           });

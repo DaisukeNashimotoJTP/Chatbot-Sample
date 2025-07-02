@@ -199,7 +199,7 @@ start() {
     log_success "開発環境の起動が完了しました"
     log_info "フロントエンド: http://localhost:3000"
     log_info "バックエンドAPI: http://localhost:8000"
-    log_info "API ドキュメント: http://localhost:8000/docs"
+    log_info "API ドキュメント: http://localhost:8000/v1/docs"
 }
 
 # 開発環境停止

@@ -22,15 +22,15 @@ export const useAuth = () => {
         try {
           await getCurrentUser();
         } catch (error) {
-          // Token is invalid, clear it
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          // Token is invalid, logout to clear all state
+          console.error('Token validation failed:', error);
+          await logout();
         }
       }
     };
 
     initializeAuth();
-  }, [user, getCurrentUser]);
+  }, [user, getCurrentUser, logout]);
 
   return {
     user,
