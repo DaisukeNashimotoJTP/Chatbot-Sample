@@ -60,7 +60,6 @@ services:
     container_name: chat_backend
     volumes:
       - ./backend:/app
-      - /app/venv
     ports:
       - "8000:8000"
     environment:

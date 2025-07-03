@@ -22,10 +22,6 @@ RUN apt-get update \
 # Set work directory
 WORKDIR /app
 
-# Create and activate virtual environment
-RUN python -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
-
 # Copy requirements first for better caching
 COPY requirements*.txt ./
 RUN pip install --upgrade pip setuptools wheel \
@@ -62,10 +58,6 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Set work directory
 WORKDIR /app
-
-# Create and activate virtual environment
-RUN python -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
 
 # Copy requirements and install production dependencies only
 COPY requirements.txt ./

@@ -4,6 +4,7 @@ Seed script to create initial data for development and testing.
 import asyncio
 from uuid import uuid4
 
+from sqlalchemy import text
 from app.core.database import AsyncSessionLocal, init_db
 from app.core.security import get_password_hash
 from app.models.user import User
@@ -14,7 +15,7 @@ async def create_test_users():
     async with AsyncSessionLocal() as session:
         # Check if users already exist
         existing_users = await session.execute(
-            "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"
+            text("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")
         )
         count = existing_users.scalar()
         
@@ -27,7 +28,7 @@ async def create_test_users():
             {
                 "username": "admin",
                 "email": "admin@chatservice.com",
-                "password": "admin123",
+                "password": "Admin123123",
                 "display_name": "Admin User",
                 "status": "active",
                 "email_verified": True,
@@ -35,7 +36,7 @@ async def create_test_users():
             {
                 "username": "johndoe",
                 "email": "john@example.com",
-                "password": "password123",
+                "password": "securePassword123",
                 "display_name": "John Doe",
                 "status": "active",
                 "email_verified": True,
@@ -43,7 +44,7 @@ async def create_test_users():
             {
                 "username": "janedoe",
                 "email": "jane@example.com",
-                "password": "password123",
+                "password": "securePassword123",
                 "display_name": "Jane Doe",
                 "status": "active",
                 "email_verified": True,
@@ -51,7 +52,7 @@ async def create_test_users():
             {
                 "username": "testuser",
                 "email": "test@example.com",
-                "password": "password123",
+                "password": "securePassword123",
                 "display_name": "Test User",
                 "status": "active",
                 "email_verified": False,
