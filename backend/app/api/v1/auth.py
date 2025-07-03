@@ -84,6 +84,12 @@ async def login(
             detail=e.message
         ) from e
     except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        import logging
+        logging.error(f"Login failed for {login_data.email}: {e}")
+        logging.error(traceback.format_exc())
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Login failed"

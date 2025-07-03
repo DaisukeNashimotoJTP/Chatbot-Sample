@@ -30,7 +30,7 @@ aioredis==2.0.1
 
 # File handling
 python-magic==0.4.27
-pillow==10.1.0
+pillow>=11.0.0
 
 # Environment
 python-dotenv==1.0.0

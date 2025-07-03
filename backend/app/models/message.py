@@ -76,10 +76,10 @@ class Message(BaseModel):
     
     # Relationships
     channel = relationship("Channel", back_populates="messages")
-    user = relationship("User", back_populates="messages")
-    parent_message = relationship("Message", remote_side="Message.id")
-    replies = relationship("Message", remote_side="Message.reply_to")
-    reactions = relationship("MessageReaction", back_populates="message")
+    # user = relationship("User", back_populates="messages")
+    # parent_message = relationship("Message", remote_side="Message.id")
+    # replies = relationship("Message", remote_side="Message.reply_to")
+    # reactions = relationship("MessageReaction", back_populates="message")
     
     def __repr__(self) -> str:
         """String representation of Message."""
@@ -115,8 +115,8 @@ class MessageReaction(BaseModel):
     )
     
     # Relationships
-    message = relationship("Message", back_populates="reactions")
-    user = relationship("User", back_populates="message_reactions")
+    # message = relationship("Message", back_populates="reactions")
+    # user = relationship("User", back_populates="message_reactions")
     
     def __repr__(self) -> str:
         return f"<MessageReaction(id={self.id}, message_id={self.message_id}, emoji={self.emoji})>"

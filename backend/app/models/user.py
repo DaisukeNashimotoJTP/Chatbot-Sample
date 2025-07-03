@@ -66,8 +66,8 @@ class User(BaseModel):
     
     # Relationships (will be added as we implement other models)
     # user_workspaces = relationship("UserWorkspace", back_populates="user")
-    messages = relationship("Message", back_populates="user")
-    message_reactions = relationship("MessageReaction", back_populates="user")
+    # messages = relationship("Message", back_populates="user")
+    # message_reactions = relationship("MessageReaction", back_populates="user")
     # files = relationship("File", back_populates="uploaded_by_user")
     
     def is_active(self) -> bool:

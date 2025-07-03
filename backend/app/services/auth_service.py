@@ -99,12 +99,45 @@ class AuthService:
         # Update last seen
         await self.user_repository.update_last_seen(user.id)
         
+        # Refresh user object to get updated timestamp
+        user = await self.user_repository.get(user.id)
+        if not user:
+            raise AuthenticationError("User not found after update")
+        
+        # Force loading of all attributes to avoid lazy loading issues
+        _ = user.id
+        _ = user.username
+        _ = user.email
+        _ = user.display_name
+        _ = user.avatar_url
+        _ = user.status
+        _ = user.timezone
+        _ = user.last_seen_at
+        _ = user.email_verified
+        _ = user.created_at
+        _ = user.updated_at
+        
         # Generate tokens
         access_token = create_access_token(subject=str(user.id))
         refresh_token = create_refresh_token(subject=str(user.id))
         
+        # Create user response with explicit field values to avoid lazy loading issues
+        user_response = UserResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            display_name=user.display_name,
+            avatar_url=user.avatar_url,
+            status=user.status,
+            timezone=user.timezone,
+            last_seen_at=user.last_seen_at,
+            email_verified=user.email_verified,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
+        
         return LoginResponse(
-            user=UserResponse.model_validate(user),
+            user=user_response,
             access_token=access_token,
             refresh_token=refresh_token,
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
