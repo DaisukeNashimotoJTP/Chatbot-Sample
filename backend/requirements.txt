@@ -8,6 +8,8 @@ pydantic-settings==2.1.0
 sqlalchemy==2.0.23
 alembic==1.13.0
 asyncpg==0.29.0
+# Using asyncpg for async PostgreSQL operations
+# psycopg2-binary is removed to avoid conflicts with async operations
 
 # Authentication
 python-jose[cryptography]==3.3.0

@@ -16,6 +16,8 @@ engine = create_async_engine(
     future=True,
     pool_pre_ping=True,
     pool_recycle=300,
+    # Explicitly specify async driver
+    module=None,  # Let SQLAlchemy auto-detect the driver from URL
 )
 
 # Create async session factory
