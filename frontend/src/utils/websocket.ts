@@ -229,11 +229,15 @@ export class WebSocketClient {
   }
 
   private handleMessage(message: WebSocketMessage): void {
+    console.log('WebSocket message received:', message);
     this.config.onMessage?.(message);
 
     // 型別のリスナーを実行
     const callbacks = this.listeners.get(message.type);
     if (callbacks) {
+      console.log(
+        `Executing ${callbacks.length} callbacks for message type: ${message.type}`
+      );
       callbacks.forEach((callback) => {
         try {
           callback(message.data);
@@ -241,6 +245,8 @@ export class WebSocketClient {
           console.error('Error in WebSocket message callback:', error);
         }
       });
+    } else {
+      console.log(`No callbacks registered for message type: ${message.type}`);
     }
   }
 
@@ -283,7 +289,7 @@ export class ChatWebSocketClient extends WebSocketClient {
     // baseUrlにAPIパス（/v1）が含まれている場合は除去
     const cleanBaseUrl = baseUrl.replace('/v1', '');
     const wsUrl = cleanBaseUrl.replace('http', 'ws') + '/v1/ws';
-    
+
     console.log('ChatWebSocketClient URL:', wsUrl);
 
     super({
@@ -377,17 +383,21 @@ export function getChatWebSocketClient(): ChatWebSocketClient {
       // ブラウザ環境では環境変数を直接使用
       const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      
+
       if (wsUrl) {
         // WebSocket URL が直接設定されている場合はそれを使用（http/httpsをws/wssに変換）
-        const url = new URL(wsUrl.startsWith('ws') ? wsUrl : wsUrl.replace('http', 'ws'));
+        const url = new URL(
+          wsUrl.startsWith('ws') ? wsUrl : wsUrl.replace('http', 'ws')
+        );
         baseUrl = `${url.protocol}//${url.host}`;
       } else if (apiUrl) {
         // API URL から WebSocket URL を推測
         baseUrl = apiUrl.replace('http', 'ws').replace('/v1', '');
       } else {
         // フォールバック: 現在のホストから推測
-        baseUrl = window.location.origin.replace(':3000', ':8000').replace('http', 'ws');
+        baseUrl = window.location.origin
+          .replace(':3000', ':8000')
+          .replace('http', 'ws');
       }
     }
 

@@ -73,24 +73,34 @@ class ConnectionManager:
     
     async def broadcast_to_channel(self, channel_id: UUID, message: dict):
         """Broadcast a message to all users subscribed to a channel."""
+        print(f"Broadcasting message to channel {channel_id}: {message}")
         if channel_id in self.channel_subscriptions:
             users = self.channel_subscriptions[channel_id]
+            print(f"Channel {channel_id} has {len(users)} subscribed users: {users}")
             tasks = []
             
             for user_id in users:
                 if user_id in self.user_connections:
                     connections = self.user_connections[user_id]
+                    print(f"User {user_id} has {len(connections)} active connections")
                     tasks.extend([
                         self._send_safe(conn, message) for conn in connections
                     ])
             
             if tasks:
+                print(f"Sending message to {len(tasks)} connections")
                 await asyncio.gather(*tasks, return_exceptions=True)
+            else:
+                print("No tasks to send message to")
+        else:
+            print(f"Channel {channel_id} has no subscriptions")
     
     async def _send_safe(self, websocket: WebSocket, message: dict):
         """Safely send a message to a WebSocket connection."""
         try:
-            await websocket.send_text(json.dumps(message))
+            message_str = json.dumps(message)
+            print(f"Sending WebSocket message: {message_str}")
+            await websocket.send_text(message_str)
         except Exception as e:
             print(f"Error sending WebSocket message: {e}")
             # Connection might be closed, ignore

@@ -15,6 +15,16 @@ export default function DashboardPage() {
   const { currentChannel, fetchChannels } = useChannel();
   const router = useRouter();
 
+  // チャンネル変更をログに出力
+  useEffect(() => {
+    console.log('=== DASHBOARD: Current channel changed ===');
+    console.log('currentChannel:', currentChannel);
+    if (currentChannel) {
+      console.log('Channel ID:', currentChannel.id);
+      console.log('Channel Name:', currentChannel.name);
+    }
+  }, [currentChannel]);
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.replace('/auth/login');
@@ -23,12 +33,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('User authenticated, fetching workspaces...');
+      console.log(
+        'Access token:',
+        localStorage.getItem('access_token')?.substring(0, 50) + '...'
+      );
       fetchWorkspaces();
     }
   }, [isAuthenticated, fetchWorkspaces]);
 
   useEffect(() => {
     if (currentWorkspace) {
+      console.log('Current workspace:', currentWorkspace.id);
       fetchChannels(currentWorkspace.id);
     }
   }, [currentWorkspace, fetchChannels]);
@@ -64,8 +80,8 @@ export default function DashboardPage() {
     <MainLayout>
       {currentChannel ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <MessageList channelId={currentChannel.id} />
-          <MessageInput 
+          <MessageList key={currentChannel.id} channelId={currentChannel.id} />
+          <MessageInput
             channelId={currentChannel.id}
             placeholder={`#${currentChannel.name} にメッセージを送信`}
           />

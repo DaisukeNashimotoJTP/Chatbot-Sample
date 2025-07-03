@@ -187,19 +187,27 @@ class WebSocketHandler:
         user = await user_repo.get(user_id)
         
         # Broadcast message to channel subscribers
+        message_data = {
+            "id": str(message.id),
+            "channel_id": str(channel_id),
+            "user_id": str(user_id),
+            "content": content,
+            "message_type": "text",
+            "reply_to": reply_to,
+            "reply_count": 0,
+            "is_edited": False,
+            "created_at": message.created_at.isoformat(),
+            "updated_at": message.updated_at.isoformat(),
+            "user_username": user.username,
+            "user_display_name": user.display_name,
+            "user_avatar_url": user.avatar_url,
+        }
+        
+        print(f"Broadcasting message: {message_data}")
+        
         await websocket_manager.broadcast_to_channel(channel_id, {
             "type": "new_message",
-            "data": {
-                "id": str(message.id),
-                "channel_id": str(channel_id),
-                "user_id": str(user_id),
-                "username": user.username,
-                "display_name": user.display_name,
-                "content": content,
-                "reply_to": reply_to,
-                "created_at": message.created_at.isoformat(),
-                "message_type": "text"
-            }
+            "data": message_data
         })
     
     async def handle_typing(self, user_id: UUID, data: dict):

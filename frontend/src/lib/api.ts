@@ -24,6 +24,12 @@ class ApiClient {
           const token = localStorage.getItem('access_token');
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log(
+              'Adding auth token to request:',
+              token.substring(0, 50) + '...'
+            );
+          } else {
+            console.log('No auth token found in localStorage');
           }
         }
         return config;
@@ -56,13 +62,13 @@ class ApiClient {
                   },
                 }
               );
-              
+
               const { access_token, refresh_token } = refreshResponse.data;
-              
+
               localStorage.setItem('access_token', access_token);
               localStorage.setItem('refresh_token', refresh_token);
               originalRequest.headers.Authorization = `Bearer ${access_token}`;
-              
+
               return this.instance(originalRequest);
             }
           } catch (refreshError) {
@@ -77,7 +83,10 @@ class ApiClient {
 
         // Transform error to our ApiError format
         const apiError: ApiError = {
-          message: error.response?.data?.detail || error.message || 'An error occurred',
+          message:
+            error.response?.data?.detail ||
+            error.message ||
+            'An error occurred',
           status: error.response?.status,
           detail: error.response?.data?.message,
         };
@@ -206,15 +215,13 @@ class ApiClient {
 
   // Message endpoints
   async getMessages(channelId: string, params?: any) {
-    return this.instance.get('/v1/messages', {
-      params: { channel_id: channelId, ...params },
+    return this.instance.get(`/v1/channels/${channelId}/messages`, {
+      params: { ...params },
     });
   }
 
   async createMessage(channelId: string, data: any) {
-    return this.instance.post('/v1/messages', data, {
-      params: { channel_id: channelId },
-    });
+    return this.instance.post(`/v1/channels/${channelId}/messages`, data);
   }
 
   async getMessage(messageId: string) {

@@ -93,12 +93,23 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setError('');
 
     try {
+      console.log('Sending message:', message.trim(), 'to channel:', channelId);
       // WebSocket経由でメッセージを送信
       if (wsClient.isConnected) {
+        console.log('WebSocket is connected, sending message...');
         wsClient.sendMessage(channelId, message.trim());
       } else {
-        // WebSocketが接続されていない場合は、APIで直接送信
-        console.log('WebSocket not connected, would send via API:', message.trim());
+        console.log('WebSocket not connected, attempting to connect...');
+        wsClient.connect();
+        // 接続後に送信
+        setTimeout(() => {
+          if (wsClient.isConnected) {
+            console.log('WebSocket connected, sending queued message...');
+            wsClient.sendMessage(channelId, message.trim());
+          } else {
+            console.error('WebSocket still not connected after retry');
+          }
+        }, 1000);
       }
 
       // タイピング状態をクリア
@@ -191,7 +202,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
           disabled={disabled || isSending}
           InputProps={{
             endAdornment: (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}
+              >
                 <Tooltip title="メンション">
                   <IconButton
                     size="small"
