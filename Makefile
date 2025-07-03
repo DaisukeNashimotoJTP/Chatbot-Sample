@@ -64,6 +64,7 @@ start: ## 開発環境を起動
 	@echo "$(YELLOW)フロントエンド: http://localhost:3000$(RESET)"
 	@echo "$(YELLOW)バックエンドAPI: http://localhost:8000$(RESET)"
 	@echo "$(YELLOW)API ドキュメント: http://localhost:8000/v1/docs$(RESET)"
+	@echo "$(YELLOW)データベースの確認: http://localhost:8080 (pgAdmin)$(RESET)"
 
 # 開発環境停止
 stop: ## 開発環境を停止
