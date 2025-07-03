@@ -119,11 +119,16 @@ const MessageInput: React.FC<MessageInputProps> = ({
       }
 
       // 入力をクリア
+      const sentMessage = message.trim();
       setMessage('');
-      onMessageSent?.(message.trim());
+      
+      // メッセージ送信完了をコールバックで通知
+      onMessageSent?.(sentMessage);
 
       // フォーカスを戻す
       textFieldRef.current?.focus();
+      
+      console.log('Message sent successfully:', sentMessage);
     } catch (error) {
       console.error('Failed to send message:', error);
       setError('メッセージの送信に失敗しました');

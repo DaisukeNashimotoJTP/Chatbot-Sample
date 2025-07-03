@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Container, Typography, CircularProgress } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,6 +14,12 @@ export default function DashboardPage() {
   const { currentWorkspace, fetchWorkspaces } = useWorkspace();
   const { currentChannel, fetchChannels } = useChannel();
   const router = useRouter();
+
+  // メッセージ送信後のコールバック
+  const handleMessageSent = useCallback((message: string) => {
+    console.log('Message sent in dashboard:', message);
+    // ここで追加の処理があれば実装
+  }, []);
 
   // チャンネル変更をログに出力
   useEffect(() => {
@@ -84,6 +90,7 @@ export default function DashboardPage() {
           <MessageInput
             channelId={currentChannel.id}
             placeholder={`#${currentChannel.name} にメッセージを送信`}
+            onMessageSent={handleMessageSent}
           />
         </Box>
       ) : (
