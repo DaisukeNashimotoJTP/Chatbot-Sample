@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,md,json}\"",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:e2e": "playwright test"
   },
   "keywords": [
     "chat",
