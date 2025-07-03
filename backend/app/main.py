@@ -110,7 +110,8 @@ def setup_routers(app: FastAPI) -> None:
         }
     
     # API v1 routes
-    from app.api.v1 import auth, users, workspaces, channels
+    from app.api.v1 import auth, users, workspaces, channels, messages
+    from app.websocket import endpoints as websocket_endpoints
     
     app.include_router(
         auth.router,
@@ -131,6 +132,16 @@ def setup_routers(app: FastAPI) -> None:
         channels.router,
         prefix=f"{settings.API_V1_PREFIX}/channels",
         tags=["Channels"]
+    )
+    app.include_router(
+        messages.router,
+        prefix=f"{settings.API_V1_PREFIX}",
+        tags=["Messages"]
+    )
+    app.include_router(
+        websocket_endpoints.router,
+        prefix=f"{settings.API_V1_PREFIX}",
+        tags=["WebSocket"]
     )
 
 
