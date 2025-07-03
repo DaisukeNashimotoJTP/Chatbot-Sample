@@ -25,28 +25,45 @@ class WebSocketHandler:
     
     async def handle_connection(self, websocket: WebSocket, token: Optional[str] = None):
         """Handle a new WebSocket connection."""
+        print(f"WebSocket connection attempt with token: {token[:20] if token else 'None'}...")
+        
         if not token:
+            print("No authentication token provided")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="No authentication token provided")
             return
         
         try:
             # Verify the token and get user
+            print(f"Verifying token...")
             user_id_str = verify_token(token)
+            print(f"Token verification result: {user_id_str}")
+            
             if not user_id_str:
+                print("Invalid token")
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
                 return
+            
             user_id = UUID(user_id_str)
+            print(f"User ID: {user_id}")
             
             # Get database session
             db = AsyncSessionLocal()
             try:
                 user_repo = UserRepository(db)
                 user = await user_repo.get(user_id)
+                print(f"User found: {user is not None}")
                 
-                if not user or not user.is_active():
-                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid user")
+                if not user:
+                    print("User not found")
+                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="User not found")
                     return
                 
+                if not user.is_active():
+                    print(f"User not active: {user.status}")
+                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="User not active")
+                    return
+                
+                print("User is valid, accepting connection")
                 # Accept the connection
                 await websocket_manager.connect(websocket, user_id)
                 
@@ -68,6 +85,8 @@ class WebSocketHandler:
                     
         except Exception as e:
             print(f"WebSocket authentication failed: {e}")
+            import traceback
+            traceback.print_exc()
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed")
     
     async def handle_message(self, websocket: WebSocket, user_id: UUID, message: dict, db: AsyncSession):

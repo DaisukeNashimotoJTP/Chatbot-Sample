@@ -131,6 +131,28 @@ describe('ChatWebSocketClient', () => {
     expect(chatClient).toBeInstanceOf(ChatWebSocketClient);
     expect(chatClient).toBeInstanceOf(WebSocketClient);
   });
+
+  test('should handle URL with /v1 path correctly', () => {
+    const chatClient = new ChatWebSocketClient('http://localhost:8000/v1');
+    expect(chatClient).toBeInstanceOf(ChatWebSocketClient);
+    expect(chatClient).toBeInstanceOf(WebSocketClient);
+  });
+
+  test('should construct WebSocket URL correctly', () => {
+    // 環境変数をモック
+    const originalEnv = process.env;
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000/v1',
+      NEXT_PUBLIC_WS_URL: 'ws://localhost:8000/v1/ws'
+    };
+
+    const client = getChatWebSocketClient();
+    expect(client).toBeInstanceOf(ChatWebSocketClient);
+
+    // 環境変数を元に戻す
+    process.env = originalEnv;
+  });
 });
 
 describe('getChatWebSocketClient singleton', () => {

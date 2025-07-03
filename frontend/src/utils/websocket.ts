@@ -280,7 +280,11 @@ export class WebSocketClient {
  */
 export class ChatWebSocketClient extends WebSocketClient {
   constructor(baseUrl: string) {
-    const wsUrl = baseUrl.replace('http', 'ws') + '/ws';
+    // baseUrlにAPIパス（/v1）が含まれている場合は除去
+    const cleanBaseUrl = baseUrl.replace('/v1', '');
+    const wsUrl = cleanBaseUrl.replace('http', 'ws') + '/v1/ws';
+    
+    console.log('ChatWebSocketClient URL:', wsUrl);
 
     super({
       url: wsUrl,
@@ -366,22 +370,28 @@ let chatWebSocketClient: ChatWebSocketClient | null = null;
 
 export function getChatWebSocketClient(): ChatWebSocketClient {
   if (!chatWebSocketClient) {
-    // Next.jsの環境変数を安全に取得
-    const apiUrl =
-      typeof window !== 'undefined'
-        ? (window as any).__NEXT_DATA__?.env?.NEXT_PUBLIC_API_URL
-        : undefined;
-
+    // 環境変数からWebSocket URLを取得
     let baseUrl = 'http://localhost:8000';
 
     if (typeof window !== 'undefined') {
-      // ブラウザ環境: 現在のオリジンから推測
-      baseUrl = window.location.origin.replace(':3000', ':8000');
-    } else if (apiUrl) {
-      // 環境変数が設定されている場合
-      baseUrl = apiUrl;
+      // ブラウザ環境では環境変数を直接使用
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      
+      if (wsUrl) {
+        // WebSocket URL が直接設定されている場合はそれを使用（http/httpsをws/wssに変換）
+        const url = new URL(wsUrl.startsWith('ws') ? wsUrl : wsUrl.replace('http', 'ws'));
+        baseUrl = `${url.protocol}//${url.host}`;
+      } else if (apiUrl) {
+        // API URL から WebSocket URL を推測
+        baseUrl = apiUrl.replace('http', 'ws').replace('/v1', '');
+      } else {
+        // フォールバック: 現在のホストから推測
+        baseUrl = window.location.origin.replace(':3000', ':8000').replace('http', 'ws');
+      }
     }
 
+    console.log('Creating WebSocket client with base URL:', baseUrl);
     chatWebSocketClient = new ChatWebSocketClient(baseUrl);
   }
   return chatWebSocketClient;
