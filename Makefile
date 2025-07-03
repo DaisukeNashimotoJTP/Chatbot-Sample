@@ -64,7 +64,6 @@ start: ## 開発環境を起動
 	@echo "$(YELLOW)フロントエンド: http://localhost:3000$(RESET)"
 	@echo "$(YELLOW)バックエンドAPI: http://localhost:8000$(RESET)"
 	@echo "$(YELLOW)API ドキュメント: http://localhost:8000/v1/docs$(RESET)"
-	@echo "$(YELLOW)データベースの確認: http://localhost:8080 (pgAdmin)$(RESET)"
 
 # 開発環境停止
 stop: ## 開発環境を停止
@@ -288,6 +287,19 @@ start-backend: ## バックエンドのみ起動
 start-frontend: ## フロントエンドのみ起動
 	@echo "$(BLUE)フロントエンドを起動しています...$(RESET)"
 	@docker compose up -d frontend
+
+start-pgadmin: ## pgAdminのみ起動
+	@echo "$(BLUE)pgAdminを起動しています...$(RESET)"
+	@docker compose --profile tools up -d pgadmin
+	@echo "$(GREEN)pgAdminが起動しました$(RESET)"
+	@echo "$(YELLOW)pgAdmin: http://localhost:8080$(RESET)"
+	@echo "$(YELLOW)  - Email: admin@chat.com$(RESET)"
+	@echo "$(YELLOW)  - Password: admin123456$(RESET)"
+
+stop-pgadmin: ## pgAdminを停止
+	@echo "$(BLUE)pgAdminを停止しています...$(RESET)"
+	@docker compose --profile tools stop pgadmin
+	@echo "$(GREEN)pgAdminを停止しました$(RESET)"
 
 # 便利なエイリアス
 dev: start ## 開発環境を起動（startのエイリアス）

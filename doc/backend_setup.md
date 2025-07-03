@@ -42,6 +42,7 @@ make start
 
 ## 4. バックエンド開発
 
+```bash
 # 仮想環境有効化
 source venv/bin/activate  # Linux/Mac
 # または
