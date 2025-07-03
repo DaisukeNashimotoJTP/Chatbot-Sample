@@ -1,13 +1,14 @@
-# フロントエンド開発環境セットアップガイド
+# フロントエンド開発環境セットアップガイド - コンテナベース
 
 ## 1. 概要
 
-Next.js を使用したフロントエンド Web アプリケーションの開発環境セットアップ手順を説明します。
+Next.js を使用したフロントエンド Web アプリケーションのコンテナベース開発環境セットアップ手順を説明します。
+ローカル環境にNode.jsをインストールする必要はありません。
 
 ## 2. 前提条件
 
-- Node.js 18.0+ がインストールされていること
-- npm または yarn がインストールされていること
+- Docker (20.10.0 以上) がインストールされていること
+- Docker Compose (2.0.0 以上) がインストールされていること
 - Git がインストールされていること
 
 ## 3. 初期セットアップ
@@ -19,35 +20,26 @@ git clone <repository-url>
 cd chat_system
 ```
 
-### 3.2 環境変数設定
+### 3.2 初期セットアップ実行
 
 ```bash
-# 環境変数ファイルをコピー
-cp .env.example .env.local
-
-# 必要に応じて .env.local ファイルを編集
-vim .env.local
+# 初期セットアップ（全サービスを含む）
+make setup
 ```
 
-## 4. フロントエンド環境構築
+このコマンドで以下が自動実行されます：
+- Dockerイメージのビルド（フロントエンド・バックエンド）
+- データベースの初期化
+- 依存関係のインストール
 
-### 4.1 Node.js バージョン確認
+### 3.3 開発環境起動
 
 ```bash
-# Node.js バージョン確認
-node --version  # v18.0+ であることを確認
-
-# npm バージョン確認
-npm --version
+# 開発環境を起動
+make start
 ```
 
-### 4.2 依存関係インストール
-
-```bash
-cd frontend
-
-# 依存関係インストール
-npm install
+## 4. フロントエンド開発
 
 # または yarn を使用する場合
 yarn install
@@ -56,54 +48,72 @@ yarn install
 ### 4.3 アプリケーション起動
 
 ```bash
-# 開発サーバー起動
-npm run dev
+### 4.1 コード編集
 
-# または yarn を使用する場合
-yarn dev
+フロントエンドのコードは `./frontend/` ディレクトリ内で編集します。
+変更は自動でコンテナに反映され、開発サーバーが自動リロードされます。
+
+```bash
+# ログの確認
+make logs-frontend
+
+# フロントエンドコンテナ内でコマンド実行
+docker-compose exec frontend bash
 ```
 
+### 4.2 環境変数
+
+環境変数は`docker-compose.yml`内に定義されており、個別の設定は不要です：
+
+```yaml
+# API設定
+NEXT_PUBLIC_API_URL: http://localhost:8000
+NEXT_PUBLIC_WS_URL: ws://localhost:8000/v1/ws
+
+# 認証設定
+NEXTAUTH_URL: http://localhost:3000
+NEXTAUTH_SECRET: dev-nextauth-secret-123456789
+```
+
+### 4.3 アクセス先
+
 アプリケーションが起動したら以下のURLでアクセス可能：
-- Web アプリケーション: http://localhost:3000
+- **Web アプリケーション**: http://localhost:3000
+- **バックエンドAPI**: http://localhost:8000
+- **API ドキュメント**: http://localhost:8000/v1/docs
 
 ## 5. 開発用コマンド
 
-### 5.1 ビルド関連
+### 5.1 ビルド・テスト関連
 
 ```bash
-# 本番用ビルド
-npm run build
+# フロントエンドのリント・フォーマット実行
+make lint-frontend
 
-# ビルド後のアプリケーション起動
-npm run start
+# フロントエンドテスト実行
+make test-frontend
 
-# 型チェック
-npm run type-check
-
-# リント
-npm run lint
-
-# リント修正
-npm run lint:fix
-
-# フォーマット
-npm run format
-
-# フォーマットチェック
-npm run format:check
+# 個別実行の場合：
+docker-compose run --rm frontend npm run build
+docker-compose run --rm frontend npm run type-check
+docker-compose run --rm frontend npm run lint:fix
+docker-compose run --rm frontend npm run format
 ```
 
 ### 5.2 テスト関連
 
 ```bash
 # 単体テスト実行
-npm test
+make test-frontend
+
+# 個別実行の場合：
+docker-compose run --rm frontend npm test
 
 # ウォッチモードでテスト実行
-npm run test:watch
+docker-compose run --rm frontend npm run test:watch
 
 # カバレッジ付きテスト実行
-npm run test:coverage
+docker-compose run --rm frontend npm run test:coverage
 
 # E2E テスト実行
 npm run test:e2e

@@ -1,25 +1,34 @@
-# Chat Service
+# Chat Service - コンテナベース開発環境
 
 Slackライクなリアルタイムチャットサービス
 
 ## 🚀 プロジェクト概要
 
 リアルタイムでのメッセージングとチームコラボレーションを支援するWebベースのチャットサービスです。
+フロントエンドとバックエンドの両方がDockerコンテナで動作するよう設定されており、ローカル環境にNode.jsやPythonをインストールする必要はありません。
 
 ### 技術スタック
 - **バックエンド**: Python 3.11+ / FastAPI / PostgreSQL
 - **フロントエンド**: Next.js 14+ / TypeScript / Tailwind CSS
-- **インフラ**: Docker / AWS
+- **インフラ**: Docker / Docker Compose
+- **データベース**: PostgreSQL 15 / Redis 7
 
 ## 📁 プロジェクト構成
 
 ```
 chat_system/
-├── backend/          # FastAPI アプリケーション
-├── frontend/         # Next.js アプリケーション
-├── doc/              # ドキュメント
-├── docker-compose.yml
-├── .env.example
+├── backend/               # FastAPI アプリケーション
+│   ├── Dockerfile        # バックエンド用マルチステージDockerfile
+│   ├── requirements.txt  # Python依存関係
+│   └── app/             # アプリケーションコード
+├── frontend/             # Next.js アプリケーション
+│   ├── Dockerfile       # フロントエンド用マルチステージDockerfile
+│   ├── package.json     # Node.js依存関係
+│   └── src/             # アプリケーションコード
+├── doc/                  # ドキュメント
+├── docker-compose.yml    # 開発環境用Docker設定
+├── docker-compose.prod.yml # 本番環境用Docker設定
+├── Makefile             # 開発用コマンド
 └── README.md
 ```
 
@@ -27,13 +36,10 @@ chat_system/
 
 ### 前提条件
 
-以下のソフトウェアがインストールされている必要があります：
+以下のツールがインストールされている必要があります：
 
-- [Docker](https://docs.docker.com/get-docker/) (20.10+)
-- [Docker Compose](https://docs.docker.com/compose/install/) (2.0+)
-- [Node.js](https://nodejs.org/) (18.0+)
-- [Python](https://www.python.org/) (3.11+)
-- [Git](https://git-scm.com/)
+- [Docker](https://docs.docker.com/get-docker/) (20.10.0 以上)
+- [Docker Compose](https://docs.docker.com/compose/install/) (2.0.0 以上)
 
 ### クイックスタート
 
@@ -43,66 +49,111 @@ chat_system/
    cd chat_system
    ```
 
-2. **環境変数の設定**
+2. **初期セットアップ（初回のみ）**
    ```bash
-   cp .env.example .env
-   # .env ファイルを編集して必要な値を設定
+   make setup
    ```
 
-3. **データベースの起動（Docker）**
+3. **開発環境を起動**
    ```bash
-   docker-compose up -d postgres redis
+   make start
    ```
 
-4. **バックエンドのセットアップ**
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   alembic upgrade head
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
+4. **アプリケーションにアクセス**
+   - **フロントエンド**: http://localhost:3000
+   - **バックエンドAPI**: http://localhost:8000
+   - **API ドキュメント**: http://localhost:8000/v1/docs
+   - **pgAdmin** (オプション): http://localhost:5050
 
-5. **フロントエンドのセットアップ**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+## 🐳 利用可能なコマンド
 
-6. **アプリケーションにアクセス**
-   - フロントエンド: http://localhost:3000
-   - バックエンドAPI: http://localhost:8000
-   - API ドキュメント: http://localhost:8000/docs
-
-## 🐳 Docker を使用した開発
-
-### 全サービスの起動
+### 基本操作
 
 ```bash
-# 全サービスを起動
-docker-compose up -d
-
-# ログの確認
-docker-compose logs -f
-
-# サービスの停止
-docker-compose down
+make setup       # 初期セットアップ
+make start       # 開発環境を起動
+make stop        # 開発環境を停止
+make restart     # 開発環境を再起動
+make clean       # クリーンアップ（データ削除）
 ```
 
-### 個別サービスの操作
+### 開発用コマンド
 
 ```bash
-# データベースのみ起動
-docker-compose up -d postgres redis
+make logs           # 全サービスのログを表示
+make logs-backend   # バックエンドのログのみ
+make logs-frontend  # フロントエンドのログのみ
 
-# バックエンドのみ起動
-docker-compose up -d backend
+make test           # 全テストを実行
+make test-backend   # バックエンドテストのみ
+make test-frontend  # フロントエンドテストのみ
 
-# フロントエンドのみ起動
-docker-compose up -d frontend
+make lint           # 全コード品質チェック
+make lint-backend   # バックエンドのリントのみ
+make lint-frontend  # フロントエンドのリントのみ
 ```
+
+### データベース操作
+
+```bash
+make migrate               # マイグレーション実行
+make migrate-create        # 新しいマイグレーション作成
+make migrate-downgrade     # マイグレーション1つ戻す
+make migrate-history       # マイグレーション履歴表示
+make seed                  # テストデータ投入
+
+make backup                # データベースバックアップ
+make restore FILE=backup.sql  # データベース復元
+
+make db-connect            # PostgreSQLに接続
+make redis-connect         # Redisに接続
+```
+
+### 個別サービス起動
+
+```bash
+make start-db        # データベースのみ起動
+make start-backend   # バックエンドのみ起動
+make start-frontend  # フロントエンドのみ起動
+```
+
+### 本番環境
+
+```bash
+# .env.prod.exampleを参考に.env.prodを作成してから：
+make build-prod     # 本番用ビルド
+make start-prod     # 本番環境起動
+make stop-prod      # 本番環境停止
+```
+
+## 🔧 開発環境の構成
+
+### サービス構成
+
+- **postgres**: PostgreSQL 15 (ポート 5432)
+- **redis**: Redis 7 (ポート 6379)
+- **backend**: Python/FastAPI (ポート 8000)
+- **frontend**: Next.js/TypeScript (ポート 3000)
+- **pgadmin**: 管理ツール (ポート 5050, profiles: tools)
+
+### 環境変数
+
+環境変数は`docker-compose.yml`内に直接定義されています。開発環境用の設定が含まれており、本番環境では`docker-compose.prod.yml`と`.env.prod`ファイルを使用します。
+
+主な環境変数：
+
+#### バックエンド
+- `DATABASE_URL`: データベース接続URL
+- `REDIS_URL`: Redis接続URL
+- `SECRET_KEY`: JWT署名用秘密鍵
+- `CORS_ORIGINS`: CORS許可オリジン
+- `DEBUG`: デバッグモード
+
+#### フロントエンド
+- `NEXT_PUBLIC_API_URL`: APIのベースURL
+- `NEXT_PUBLIC_WS_URL`: WebSocket URL
+- `NEXTAUTH_URL`: 認証のベースURL
+- `NEXTAUTH_SECRET`: NextAuth.js用秘密鍵
 
 ## 🗃️ データベース操作
 
@@ -110,82 +161,89 @@ docker-compose up -d frontend
 
 ```bash
 # マイグレーションファイルの生成
-cd backend
-alembic revision --autogenerate -m "Add new table"
+make migrate-create
 
 # マイグレーションの実行
-alembic upgrade head
+make migrate
 
 # マイグレーションの履歴確認
-alembic history
+make migrate-history
 
 # 特定のリビジョンへのロールバック
-alembic downgrade -1
+make migrate-downgrade
 ```
 
 ### データベース接続
 
 ```bash
 # PostgreSQL コンテナに接続
-docker-compose exec postgres psql -U chat_user -d chat_db
+make db-connect
 
 # Redis コンテナに接続
-docker-compose exec redis redis-cli
+make redis-connect
 ```
 
-## 🔧 開発用コマンド
+## 🧪 開発用コマンド
 
 ### バックエンド
 
 ```bash
-cd backend
-
-# 開発サーバー起動
-uvicorn app.main:app --reload
-
 # テスト実行
-pytest
+make test-backend
 
-# コードフォーマット
-black app/
-isort app/
+# コードフォーマット・リント
+make lint-backend
 
-# 型チェック
-mypy app/
-
-# リント
-flake8 app/
-
-# 依存関係の更新
-pip-compile requirements.in
+# ログ確認
+make logs-backend
 ```
 
 ### フロントエンド
 
 ```bash
-cd frontend
-
-# 開発サーバー起動
-npm run dev
-
-# ビルド
-npm run build
-
 # テスト実行
-npm test
+make test-frontend
 
-# E2Eテスト
-npm run test:e2e
+# リント・フォーマット
+make lint-frontend
 
-# 型チェック
-npm run type-check
-
-# リント
-npm run lint
-
-# フォーマット
-npm run format
+# ログ確認
+make logs-frontend
 ```
+
+## 🌐 開発のワークフロー
+
+1. **初期セットアップ**
+   ```bash
+   make setup
+   ```
+
+2. **開発環境起動**
+   ```bash
+   make start
+   ```
+
+3. **コード変更**
+   - バックエンド: `./backend/` 内のファイルを編集
+   - フロントエンド: `./frontend/` 内のファイルを編集
+   - 変更は自動でリロードされます
+
+4. **テスト実行**
+   ```bash
+   make test
+   ```
+
+5. **コード品質チェック**
+   ```bash
+   make lint
+   ```
+
+6. **データベース変更**
+   ```bash
+   # モデル変更後
+   make migrate-create
+   make migrate
+   ```
 
 ## 🌐 環境変数
 
@@ -232,40 +290,43 @@ NEXT_PUBLIC_APP_ENV=development
 
 ## 🧪 テスト
 
+### 全テスト実行
+
+```bash
+# 全テスト実行
+make test
+
+# バックエンドテストのみ
+make test-backend
+
+# フロントエンドテストのみ
+make test-frontend
+```
+
 ### バックエンドテスト
 
 ```bash
-cd backend
-
-# 全テスト実行
-pytest
+# コンテナ内でテスト実行
+make test-backend
 
 # カバレッジ付きテスト
-pytest --cov=app
+docker-compose run --rm backend pytest --cov=app --cov-report=html
 
 # 特定のテストファイル実行
-pytest tests/test_auth.py
-
-# テストデータベースのリセット
-pytest --create-db
+docker-compose run --rm backend pytest tests/test_auth.py
 ```
 
 ### フロントエンドテスト
 
 ```bash
-cd frontend
-
 # 単体テスト
-npm test
-
-# ウォッチモード
-npm test -- --watch
+make test-frontend
 
 # E2Eテスト
-npm run test:e2e
+docker-compose run --rm frontend npm run test:e2e
 
-# ビジュアル回帰テスト
-npm run test:visual
+# ウォッチモードでテスト
+docker-compose run --rm frontend npm test -- --watch
 ```
 
 ## 📚 ドキュメント
@@ -276,89 +337,105 @@ npm run test:visual
 - [バックエンド開発ガイド](./doc/backend_setup.md)
 - [フロントエンド開発ガイド](./doc/frontend_setup.md)
 
-## 🤝 開発フロー
+## 🤝 貢献方法
 
-1. **ブランチ作成**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **開発・テスト**
-   - 機能実装
-   - テスト作成・実行
-   - コードレビュー
-
-3. **プルリクエスト**
-   - PR作成
-   - レビュー対応
-   - マージ
+1. ブランチを作成
+2. 変更を実装
+3. テストを実行: `make test`
+4. リントを実行: `make lint`
+5. プルリクエストを作成
 
 ## 🐛 トラブルシューティング
 
 ### よくある問題
 
-**1. PostgreSQL接続エラー**
+**1. ポートが使用されている場合**
 ```bash
-# コンテナの状態確認
-docker-compose ps
+# 使用中のプロセスを確認
+sudo lsof -i :3000
+sudo lsof -i :8000
 
-# ログ確認
-docker-compose logs postgres
-
-# コンテナの再起動
-docker-compose restart postgres
+# 強制停止
+make stop
 ```
 
-**2. ポート競合エラー**
+**2. データベース接続エラー**
 ```bash
-# 使用中のポート確認
-lsof -i :8000
-lsof -i :3000
-
-# プロセス終了
-kill -9 <PID>
+# データベースを再起動
+make stop
+make start-db
+# 少し待ってから
+make start
 ```
 
-**3. 依存関係エラー**
+**3. コンテナの完全リセット**
 ```bash
-# Python仮想環境の再作成
-cd backend
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+make clean
+make setup
+```
 
-# Node.jsモジュールの再インストール
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
+**4. 依存関係エラー**
+```bash
+# イメージの再ビルド
+docker-compose build --no-cache
+
+# ボリュームのクリア
+docker-compose down -v
+make setup
 ```
 
 ### ログの確認
 
 ```bash
 # 全サービスのログ
-docker-compose logs -f
+make logs
 
 # 特定サービスのログ
-docker-compose logs -f postgres
-docker-compose logs -f backend
-docker-compose logs -f frontend
+make logs-backend
+make logs-frontend
+
+# エラー確認
+make logs | grep -i error
 ```
+
+### パフォーマンスの最適化
+
+#### 開発時のボリュームマウント
+
+- `node_modules`と`.next`はボリュームとしてマウントされ、ホストとコンテナ間での同期を高速化
+- `venv`（Python仮想環境）もボリュームマウントで高速化
+
+#### 本番時の最適化
+
+- マルチステージビルドによる最小限のイメージサイズ
+- 非rootユーザーでの実行
+- ヘルスチェック機能
 
 ## 🚀 デプロイ
 
-### 本番環境への デプロイ
+### 本番環境へのデプロイ
 
 詳細は [デプロイガイド](./doc/deployment.md) を参照してください。
 
 ```bash
+# .env.prod.exampleを参考に.env.prodを作成してから：
+
 # 本番用ビルド
-docker-compose -f docker-compose.prod.yml build
+make build-prod
 
 # 本番環境起動
-docker-compose -f docker-compose.prod.yml up -d
+make start-prod
+
+# 本番環境停止
+make stop-prod
 ```
+
+### セキュリティ
+
+- 開発環境では弱いシークレットキーを使用
+- 本番環境では必ず`.env.prod`で強力な値を設定
+- 非rootユーザーでのコンテナ実行
+- 最小限の権限での実行
 
 ## 📞 サポート
 

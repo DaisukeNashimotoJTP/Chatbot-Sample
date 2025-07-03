@@ -1,13 +1,14 @@
-# バックエンド開発環境セットアップガイド
+# バックエンド開発環境セットアップガイド - コンテナベース
 
 ## 1. 概要
 
-FastAPI を使用したバックエンド API の開発環境セットアップ手順を説明します。
+FastAPI を使用したバックエンド API のコンテナベース開発環境セットアップ手順を説明します。
+ローカル環境にPythonをインストールする必要はありません。
 
 ## 2. 前提条件
 
-- Python 3.11+ がインストールされていること
-- Docker & Docker Compose がインストールされていること
+- Docker (20.10.0 以上) がインストールされていること
+- Docker Compose (2.0.0 以上) がインストールされていること
 - Git がインストールされていること
 
 ## 3. 初期セットアップ
@@ -19,35 +20,27 @@ git clone <repository-url>
 cd chat_system
 ```
 
-### 3.2 環境変数設定
+### 3.2 初期セットアップ実行
 
 ```bash
-# 環境変数ファイルをコピー
-cp .env.example .env
-
-# 必要に応じて .env ファイルを編集
-vim .env
+# 初期セットアップ（データベース、マイグレーション、シードデータを含む）
+make setup
 ```
 
-### 3.3 データベース起動
+このコマンドで以下が自動実行されます：
+- Dockerイメージのビルド
+- データベース（PostgreSQL、Redis）の起動
+- データベースマイグレーション
+- テストデータの投入
+
+### 3.3 開発環境起動
 
 ```bash
-# PostgreSQL と Redis をDockerで起動
-docker-compose up -d postgres redis
-
-# データベース接続確認
-docker-compose exec postgres psql -U chat_user -d chat_db -c "SELECT version();"
+# 開発環境を起動
+make start
 ```
 
-## 4. バックエンド環境構築
-
-### 4.1 仮想環境作成
-
-```bash
-cd backend
-
-# 仮想環境作成
-python -m venv venv
+## 4. バックエンド開発
 
 # 仮想環境有効化
 source venv/bin/activate  # Linux/Mac
@@ -55,91 +48,127 @@ source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate     # Windows
 ```
 
-### 4.2 依存関係インストール
+### 4.1 コード編集
+
+バックエンドのコードは `./backend/` ディレクトリ内で編集します。
+変更は自動でコンテナに反映され、開発サーバーが自動リロードされます。
 
 ```bash
-# 依存関係インストール
-pip install -r requirements.txt
+# ログの確認
+make logs-backend
 
-# 開発用依存関係インストール
-pip install -r requirements-dev.txt
+# バックエンドコンテナ内でコマンド実行
+docker-compose exec backend bash
 ```
 
-### 4.3 データベースマイグレーション
+### 4.2 データベースマイグレーション
 
 ```bash
+# 新しいマイグレーションファイルを作成
+make migrate-create
+
 # マイグレーション実行
-alembic upgrade head
+make migrate
 
-# 初期データ投入（オプション）
-python scripts/seed_data.py
+# マイグレーション履歴確認
+make migrate-history
+
+# 1つ前のマイグレーションに戻す
+make migrate-downgrade
 ```
 
-### 4.4 アプリケーション起動
+### 4.3 テストデータ管理
 
 ```bash
-# 開発サーバー起動
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+# テストデータの投入
+make seed
 
-サーバーが起動したら以下のURLでアクセス可能：
-- API: http://localhost:8000
-- API ドキュメント: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+# データベースバックアップ
+make backup
+
+# データベース復元
+make restore FILE=backup.sql
+```
 
 ## 5. 開発用コマンド
 
 ### 5.1 コード品質チェック
 
 ```bash
-# コードフォーマット
-black app/
-isort app/
-
-# リント
-flake8 app/
-pylint app/
-
-# 型チェック
-mypy app/
-```
-
-### 5.2 テスト実行
+# バックエンドのリント・フォーマット実行
+make lint-backend
 
 ```bash
-# 全テスト実行
-pytest
+# バックエンドテスト実行
+make test-backend
+
+# 個別実行の場合：
+docker-compose run --rm backend pytest
 
 # カバレッジ付きテスト
-pytest --cov=app --cov-report=html
+docker-compose run --rm backend pytest --cov=app --cov-report=html
 
 # 特定のテストファイル実行
-pytest tests/test_auth.py
-
-# テストデータベース使用
-pytest --create-db
+docker-compose run --rm backend pytest tests/test_auth.py
 ```
 
 ### 5.3 データベース操作
 
 ```bash
-# 新しいマイグレーションファイル作成
-alembic revision --autogenerate -m "Add new table"
+# データベースに接続
+make db-connect
 
-# マイグレーション実行
-alembic upgrade head
+# Redisに接続
+make redis-connect
 
-# マイグレーション履歴確認
-alembic history
+# データベースバックアップ
+make backup
 
-# 1つ前のマイグレーションにロールバック
-alembic downgrade -1
-
-# 特定のリビジョンまでロールバック
-alembic downgrade <revision_id>
+# データベース復元
+make restore FILE=path/to/backup.sql
 ```
 
-## 6. プロジェクト構造
+### 5.4 依存関係管理
+
+```bash
+# 新しいパッケージを追加
+# 1. requirements.txt または requirements-dev.txt を編集
+# 2. イメージを再ビルド
+docker-compose build backend
+
+# または個別にインストール
+docker-compose run --rm backend pip install <package-name>
+```
+
+## 6. デバッグとログ
+
+### 6.1 ログ確認
+
+```bash
+# バックエンドログの確認
+make logs-backend
+
+# リアルタイムログ監視
+docker-compose logs -f backend
+
+# エラーログのみ表示
+make logs-backend | grep -i error
+```
+
+### 6.2 デバッグ
+
+```bash
+# バックエンドコンテナ内でシェル実行
+docker-compose exec backend bash
+
+# Python インタープリター起動
+docker-compose exec backend python
+
+# 依存関係の確認
+docker-compose exec backend pip list
+```
+
+## 7. プロジェクト構造
 
 ```
 backend/
@@ -358,39 +387,112 @@ def some_function():
     logger.info("Function called")
     logger.debug("Debug information")
     logger.error("Error occurred")
+## 8. 環境変数
+
+環境変数は`docker-compose.yml`内に直接定義されており、開発時に設定ファイルを編集する必要はありません。
+
+主な環境変数：
+
+```yaml
+# データベース設定
+DATABASE_URL: postgresql+asyncpg://chat_user:chat_password@postgres:5432/chat_db
+TEST_DATABASE_URL: postgresql+asyncpg://chat_user:chat_password@postgres_test:5432/chat_test_db
+
+# Redis設定
+REDIS_URL: redis://redis:6379
+
+# JWT設定
+SECRET_KEY: dev-secret-key-change-in-production-123456789
+ALGORITHM: HS256
+ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+
+# CORS設定
+CORS_ORIGINS: '["http://localhost:3000", "http://frontend:3000"]'
+
+# アプリケーション設定
+DEBUG: "true"
 ```
 
-### 10.2 デバッガー使用
-```python
-import pdb
+本番環境では`.env.prod`ファイルで適切な値を設定します。
 
-def some_function():
-    pdb.set_trace()  # ブレークポイント
-    # デバッグしたいコード
-```
+## 9. トラブルシューティング
 
-### 10.3 API テスト
+### 9.1 よくある問題
+
+**バックエンドコンテナが起動しない**
 ```bash
-# cURL を使用したテスト
-curl -X POST "http://localhost:8000/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "password"}'
+# ログを確認
+make logs-backend
 
-# HTTPie を使用したテスト（推奨）
-http POST localhost:8000/v1/auth/login email=test@example.com password=password
+# イメージを再ビルド
+docker-compose build backend
+
+# コンテナを再作成
+docker-compose up -d --force-recreate backend
 ```
 
-## 11. 本番環境への準備
+**データベース接続エラー**
+```bash
+# データベースの状態確認
+docker-compose ps postgres
 
-### 11.1 環境変数の設定
-本番環境用の環境変数を適切に設定
+# データベースを再起動
+docker-compose restart postgres
 
-### 11.2 セキュリティ設定
-- SECRET_KEY を安全な値に変更
-- CORS_ORIGINS を適切に設定
-- HTTPS の使用
+# データベース接続確認
+make db-connect
+```
 
-### 11.3 パフォーマンス最適化
+**依存関係のエラー**
+```bash
+# コンテナ内で依存関係確認
+docker-compose exec backend pip list
+
+# requirements.txtが更新された場合
+docker-compose build --no-cache backend
+```
+
+### 9.2 デバッグ
+
+**コンテナ内でデバッグ**
+```bash
+# バックエンドコンテナにアクセス
+docker-compose exec backend bash
+
+# Python REPLでテスト
+docker-compose exec backend python
+>>> from app.main import app
+>>> print(app.routes)
+```
+
+**APIテスト**
+```bash
+# ヘルスチェック
+curl http://localhost:8000/v1/health
+
+# API ドキュメントにアクセス
+# http://localhost:8000/v1/docs
+```
+
+## 10. 本番環境への準備
+
+### 10.1 本番用ビルド
+```bash
+# 本番用イメージビルド
+make build-prod
+
+# 本番環境起動
+make start-prod
+```
+
+### 10.2 セキュリティ設定
+本番環境では以下を必ず変更：
+- `.env.prod`でSECRET_KEYを安全な値に設定
+- CORS_ORIGINSを本番ドメインに限定
+- DEBUGをfalseに設定
+
+### 10.3 パフォーマンス最適化
 - データベース接続プールの設定
-- キャッシュの活用
+- Redis キャッシュの活用
 - 適切なインデックスの設定
+- ログレベルの調整
