@@ -45,26 +45,28 @@ import { validateWorkspaceName, validateChannelName } from '@/utils/validation';
 
 const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
-  const { 
-    workspaces, 
-    currentWorkspace, 
-    setCurrentWorkspace, 
-    createWorkspace, 
-    isLoading: workspaceLoading 
+  const {
+    workspaces,
+    currentWorkspace,
+    setCurrentWorkspace,
+    createWorkspace,
+    isLoading: workspaceLoading,
   } = useWorkspace();
-  const { 
-    channels, 
-    currentChannel, 
-    setCurrentChannel, 
-    createChannel, 
-    isLoading: channelLoading 
+  const {
+    channels,
+    currentChannel,
+    setCurrentChannel,
+    createChannel,
+    isLoading: channelLoading,
   } = useChannel();
 
   const [showWorkspaceDialog, setShowWorkspaceDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
   const [channelName, setChannelName] = useState('');
-  const [channelType, setChannelType] = useState<'public' | 'private'>('public');
+  const [channelType, setChannelType] = useState<'public' | 'private'>(
+    'public'
+  );
   const [channelsExpanded, setChannelsExpanded] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -125,7 +127,14 @@ const Sidebar: React.FC = () => {
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* ワークスペースヘッダー */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1,
+            }}
+          >
             <Typography variant="h6" fontWeight="bold" noWrap>
               {currentWorkspace?.name || 'ワークスペースを選択'}
             </Typography>
@@ -142,12 +151,19 @@ const Sidebar: React.FC = () => {
 
         {/* ワークスペース一覧 */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1,
+            }}
+          >
             <Typography variant="subtitle2" fontWeight="medium">
               ワークスペース
             </Typography>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={() => setShowWorkspaceDialog(true)}
             >
               <AddIcon fontSize="small" />
@@ -164,7 +180,7 @@ const Sidebar: React.FC = () => {
                   <ListItemIcon sx={{ minWidth: 36 }}>
                     <WorkspaceIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText 
+                  <ListItemText
                     primary={workspace.name}
                     primaryTypographyProps={{ variant: 'body2', noWrap: true }}
                   />
@@ -175,16 +191,24 @@ const Sidebar: React.FC = () => {
         </Box>
 
         {/* チャンネル一覧 */}
-        {currentWorkspace && (
-          <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+
+        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+          {currentWorkspace && (
             <Box sx={{ p: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 1,
+                }}
+              >
                 <Button
                   variant="text"
                   size="small"
                   startIcon={channelsExpanded ? <ExpandLess /> : <ExpandMore />}
                   onClick={() => setChannelsExpanded(!channelsExpanded)}
-                  sx={{ 
+                  sx={{
                     color: 'text.secondary',
                     textTransform: 'none',
                     fontWeight: 'medium',
@@ -193,8 +217,8 @@ const Sidebar: React.FC = () => {
                 >
                   チャンネル
                 </Button>
-                <IconButton 
-                  size="small" 
+                <IconButton
+                  size="small"
                   onClick={() => setShowChannelDialog(true)}
                 >
                   <AddIcon fontSize="small" />
@@ -217,13 +241,20 @@ const Sidebar: React.FC = () => {
                             <TagIcon fontSize="small" />
                           )}
                         </ListItemIcon>
-                        <ListItemText 
+                        <ListItemText
                           primary={channel.name}
-                          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            noWrap: true,
+                          }}
                         />
                         {channel.unread_count && channel.unread_count > 0 && (
                           <Chip
-                            label={channel.unread_count > 99 ? '99+' : channel.unread_count}
+                            label={
+                              channel.unread_count > 99
+                                ? '99+'
+                                : channel.unread_count
+                            }
                             size="small"
                             color="error"
                             sx={{ height: 20, fontSize: '0.75rem' }}
@@ -235,16 +266,16 @@ const Sidebar: React.FC = () => {
                 </List>
               </Collapse>
             </Box>
-          </Box>
-        )}
+          )}
+        </Box>
 
         {/* ユーザー情報とログアウト */}
         <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Avatar
-              sx={{ 
-                width: 32, 
-                height: 32, 
+              sx={{
+                width: 32,
+                height: 32,
                 bgcolor: 'primary.main',
                 fontSize: '0.875rem',
               }}
@@ -267,8 +298,8 @@ const Sidebar: React.FC = () => {
       </Box>
 
       {/* ワークスペース作成ダイアログ */}
-      <Dialog 
-        open={showWorkspaceDialog} 
+      <Dialog
+        open={showWorkspaceDialog}
         onClose={() => {
           setShowWorkspaceDialog(false);
           setWorkspaceName('');
@@ -296,7 +327,7 @@ const Sidebar: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => {
               setShowWorkspaceDialog(false);
               setWorkspaceName('');
@@ -305,7 +336,7 @@ const Sidebar: React.FC = () => {
           >
             キャンセル
           </Button>
-          <Button 
+          <Button
             onClick={handleCreateWorkspace}
             variant="contained"
             disabled={workspaceLoading || !workspaceName.trim()}
@@ -316,8 +347,8 @@ const Sidebar: React.FC = () => {
       </Dialog>
 
       {/* チャンネル作成ダイアログ */}
-      <Dialog 
-        open={showChannelDialog} 
+      <Dialog
+        open={showChannelDialog}
         onClose={() => {
           setShowChannelDialog(false);
           setChannelName('');
@@ -350,11 +381,13 @@ const Sidebar: React.FC = () => {
             <FormLabel component="legend">チャンネル種別</FormLabel>
             <RadioGroup
               value={channelType}
-              onChange={(e) => setChannelType(e.target.value as 'public' | 'private')}
+              onChange={(e) =>
+                setChannelType(e.target.value as 'public' | 'private')
+              }
             >
-              <FormControlLabel 
-                value="public" 
-                control={<Radio />} 
+              <FormControlLabel
+                value="public"
+                control={<Radio />}
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TagIcon fontSize="small" />
@@ -362,9 +395,9 @@ const Sidebar: React.FC = () => {
                   </Box>
                 }
               />
-              <FormControlLabel 
-                value="private" 
-                control={<Radio />} 
+              <FormControlLabel
+                value="private"
+                control={<Radio />}
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LockIcon fontSize="small" />
@@ -376,7 +409,7 @@ const Sidebar: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => {
               setShowChannelDialog(false);
               setChannelName('');
@@ -386,7 +419,7 @@ const Sidebar: React.FC = () => {
           >
             キャンセル
           </Button>
-          <Button 
+          <Button
             onClick={handleCreateChannel}
             variant="contained"
             disabled={channelLoading || !channelName.trim()}
