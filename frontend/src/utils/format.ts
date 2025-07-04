@@ -1,9 +1,12 @@
 /**
  * 日付をフォーマットする関数
  */
-export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
+export function formatDate(
+  date: string | Date,
+  options?: Intl.DateTimeFormatOptions
+): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   const defaultOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
@@ -11,16 +14,19 @@ export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOpt
     hour: '2-digit',
     minute: '2-digit',
   };
-  
+
   return dateObj.toLocaleDateString('ja-JP', { ...defaultOptions, ...options });
 }
 
 /**
  * 相対時間を表示する関数
  */
-export function formatRelativeTime(date: string | Date): string {
+export function formatRelativeTime(
+  date: string | Date,
+  currentTime?: Date
+): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const now = new Date();
+  const now = currentTime || new Date();
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
@@ -71,7 +77,10 @@ export function formatMemberCount(count: number): string {
 /**
  * チャンネル名をフォーマットする関数
  */
-export function formatChannelName(name: string, type: 'public' | 'private'): string {
+export function formatChannelName(
+  name: string,
+  type: 'public' | 'private'
+): string {
   if (type === 'private') {
     return `🔒 ${name}`;
   }
@@ -81,7 +90,10 @@ export function formatChannelName(name: string, type: 'public' | 'private'): str
 /**
  * ユーザー表示名をフォーマットする関数
  */
-export function formatUserDisplayName(user: { display_name?: string; username: string }): string {
+export function formatUserDisplayName(user: {
+  display_name?: string;
+  username: string;
+}): string {
   return user.display_name || user.username;
 }
 

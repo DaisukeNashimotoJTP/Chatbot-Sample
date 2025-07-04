@@ -14,7 +14,7 @@ body {
 .bg-slack-sidebar {
   background-color: #f5f5f5;
 }
-  
+
 /* カスタムスクロールバー */
 .scrollbar-thin {
   scrollbar-width: thin;
@@ -171,7 +171,7 @@ body {
     background-color: #111827;
     color: #f9fafb;
   }
-  
+
   .dark .bg-slack-sidebar {
     background-color: #1f2937;
   }
@@ -182,7 +182,7 @@ body {
   .message-bubble {
     padding: 16px;
   }
-  
+
   .channel-item {
     padding: 8px 12px;
   }
@@ -193,7 +193,7 @@ body {
   .no-print {
     display: none !important;
   }
-  
+
   body {
     background-color: white;
     color: black;

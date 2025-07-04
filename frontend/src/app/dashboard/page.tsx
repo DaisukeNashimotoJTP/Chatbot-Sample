@@ -85,7 +85,7 @@ export default function DashboardPage() {
   return (
     <MainLayout>
       {currentChannel ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
           <MessageList key={currentChannel.id} channelId={currentChannel.id} />
           <MessageInput
             channelId={currentChannel.id}
