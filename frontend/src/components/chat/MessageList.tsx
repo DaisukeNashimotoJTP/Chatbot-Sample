@@ -42,45 +42,36 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
   // メッセージキャッシュ
   const messageCache = useRef<{ [channelId: string]: Message[] }>({});
 
-  // メッセージの状態を一元管理
+  // グループとメッセージの状態を一元管理
   const [messageStates, setMessageStates] = useState<{
-    // キー: メッセージID、値: 時間表示 ("今", "5分前" など)
-    messageTime: { [messageId: string]: string };
-    // キー: "prevId-currentId"、値: グループ化状態
-    groupedState: { [groupKey: string]: boolean };
+    // キー: グループID（最初のメッセージID）、値: グループの時間表示
+    groupTime: { [groupId: string]: string };
+    // キー: メッセージID、値: 所属するグループID
+    messageToGroup: { [messageId: string]: string };
+    // キー: グループID、値: グループに属するメッセージIDの配列
+    groupToMessages: { [groupId: string]: string[] };
   }>({
-    messageTime: {},
-    groupedState: {},
+    groupTime: {},
+    messageToGroup: {},
+    groupToMessages: {},
   });
 
-  // 旧状態管理変数の互換性用エイリアス（リファクタリング中の一時的な措置）
-  const dynamicTimeStates = messageStates.messageTime;
-  const dynamicGroupStates = messageStates.groupedState;
-  const setDynamicTimeStates = (updater: any) => {
-    if (typeof updater === 'function') {
-      setMessageStates((prev) => ({
-        ...prev,
-        messageTime: updater(prev.messageTime),
-      }));
-    } else {
-      setMessageStates((prev) => ({
-        ...prev,
-        messageTime: updater,
-      }));
-    }
+  // ヘルパー関数: メッセージが属するグループIDを取得
+  const getMessageGroupId = (messageId: string): string => {
+    return messageStates.messageToGroup[messageId] || messageId;
   };
-  const setDynamicGroupStates = (updater: any) => {
-    if (typeof updater === 'function') {
-      setMessageStates((prev) => ({
-        ...prev,
-        groupedState: updater(prev.groupedState),
-      }));
-    } else {
-      setMessageStates((prev) => ({
-        ...prev,
-        groupedState: updater,
-      }));
-    }
+
+  // ヘルパー関数: グループの時間表示を取得
+  const getGroupTime = (groupId: string): string => {
+    return messageStates.groupTime[groupId] || '今';
+  };
+
+  // ヘルパー関数: メッセージがグループ化されているかチェック
+  const isMessageGrouped = (messageId: string, prevMessageId?: string): boolean => {
+    if (!prevMessageId) return false;
+    const currentGroupId = getMessageGroupId(messageId);
+    const prevGroupId = getMessageGroupId(prevMessageId);
+    return currentGroupId === prevGroupId && currentGroupId !== messageId;
   };
 
   // リアルタイム時間更新
@@ -190,16 +181,13 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
               new Date().toLocaleTimeString()
             );
 
-            const updatedTimeStates = { ...prevStates.messageTime };
-            const updatedGroupStates = { ...prevStates.groupedState };
+            const updatedGroupTime = { ...prevStates.groupTime };
+            const updatedMessageToGroup = { ...prevStates.messageToGroup };
+            const updatedGroupToMessages = { ...prevStates.groupToMessages };
 
             // 直前のメッセージを取得
             const lastMessage = newMessages[newMessages.length - 2];
 
-            // 最新メッセージは常に「今」として設定
-            updatedTimeStates[message.id] = '今';
-
-            // 直前のメッセージが存在する場合のみグループ化判定
             if (lastMessage) {
               // 基本条件: 同一ユーザーかつ1分以内のメッセージ
               const isSameUser = lastMessage.user_id === message.user_id;
@@ -208,36 +196,55 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
                 new Date(lastMessage.created_at).getTime();
               const isWithin1Min = timeDiff < 60000;
 
-              // 直前メッセージの時間表示を取得
-              const lastMessageTime =
-                prevStates.messageTime[lastMessage.id] ||
-                formatRelativeTime(lastMessage.created_at, new Date());
+              // 直前メッセージのグループ情報を取得
+              const lastMessageGroupId = prevStates.messageToGroup[lastMessage.id] || lastMessage.id;
+              const lastMessageGroupTime = prevStates.groupTime[lastMessageGroupId] || '今';
 
-              // グループ化条件: 同一ユーザーかつ1分以内かつ直前メッセージが「今」
-              if (isSameUser && isWithin1Min && lastMessageTime === '今') {
-                // グループ化実行
-                const groupKey = `${lastMessage.id}-${message.id}`;
-                updatedGroupStates[groupKey] = true;
+              // グループ化条件: 同一ユーザーかつ1分以内かつ直前メッセージのグループが「今」
+              if (isSameUser && isWithin1Min && lastMessageGroupTime === '今') {
+                // グループ化実行 - 直前のグループに追加
+                updatedMessageToGroup[message.id] = lastMessageGroupId;
+                
+                // グループのメッセージリストに追加
+                if (!updatedGroupToMessages[lastMessageGroupId]) {
+                  updatedGroupToMessages[lastMessageGroupId] = [lastMessage.id];
+                }
+                updatedGroupToMessages[lastMessageGroupId].push(message.id);
+                
                 console.log(
-                  `[グループ化] 同一ユーザーで1分以内、直前が「今」なのでグループ化`
+                  `[グループ化実行] メッセージID: ${message.id}, グループID: ${lastMessageGroupId}, 時間表示: ${lastMessageGroupTime}`
                 );
               } else {
-                // 非グループ化（新しいメッセージは独立した表示）
+                // 新しいグループ作成
+                const newGroupId = message.id; // 最初のメッセージIDがグループID
+                updatedMessageToGroup[message.id] = newGroupId;
+                updatedGroupToMessages[newGroupId] = [message.id];
+                updatedGroupTime[newGroupId] = '今';
+                
                 console.log(
-                  `[非グループ化] 理由: ${
+                  `[新しいグループ作成] メッセージID: ${message.id}, グループID: ${newGroupId}, 理由: ${
                     !isSameUser
                       ? '異なるユーザー'
                       : !isWithin1Min
                       ? '1分以上経過'
-                      : '直前が「今」ではない'
+                      : `直前グループが「今」ではない (実際: "${lastMessageGroupTime}")`
                   }`
                 );
+                console.log(`[新しいグループ] グループID: ${newGroupId} の時間表示を「今」に設定 (常に新グループは「今」)`);
               }
+            } else {
+              // 最初のメッセージの場合は新しいグループを作成
+              const newGroupId = message.id;
+              updatedMessageToGroup[message.id] = newGroupId;
+              updatedGroupToMessages[newGroupId] = [message.id];
+              updatedGroupTime[newGroupId] = '今';
+              console.log(`[最初のメッセージ] グループID: ${newGroupId} を「今」で作成 (最初のメッセージは常に「今」)`);
             }
 
             return {
-              messageTime: updatedTimeStates,
-              groupedState: updatedGroupStates,
+              groupTime: updatedGroupTime,
+              messageToGroup: updatedMessageToGroup,
+              groupToMessages: updatedGroupToMessages,
             };
           });
 
@@ -339,17 +346,22 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
 
         setMessages(sortedMessages);
 
-        // 初期の時間状態を設定
-        const initialTimeStates: { [messageId: string]: string } = {};
-        for (const message of sortedMessages) {
-          initialTimeStates[message.id] = formatRelativeTime(
-            message.created_at,
-            currentTime
-          );
+        // 初期のグループ状態を設定
+        const initialGroupTime: { [groupId: string]: string } = {};
+        const initialMessageToGroup: { [messageId: string]: string } = {};
+        const initialGroupToMessages: { [groupId: string]: string[] } = {};
+
+        // 最初のメッセージは必ず新しいグループとして「今」に設定
+        if (sortedMessages.length > 0) {
+          const firstMessage = sortedMessages[0];
+          const firstGroupId = firstMessage.id;
+          initialGroupTime[firstGroupId] = '今';
+          initialMessageToGroup[firstMessage.id] = firstGroupId;
+          initialGroupToMessages[firstGroupId] = [firstMessage.id];
+          console.log(`[初期化] 最初のメッセージ ${firstMessage.id} のグループ ${firstGroupId} を「今」に設定 (最初のグループは常に「今」)`);
         }
 
-        // 初期のグループ状態を設定
-        const initialGroupStates: { [groupKey: string]: boolean } = {};
+        // 残りのメッセージのグループ化を処理
         for (let i = 1; i < sortedMessages.length; i++) {
           const message = sortedMessages[i];
           const prevMessage = sortedMessages[i - 1];
@@ -359,32 +371,37 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
           const timeDiff =
             new Date(message.created_at).getTime() -
             new Date(prevMessage.created_at).getTime();
+          const isWithin1Min = timeDiff < 60000;
 
-          // グループ化条件を満たす場合のみグループ化フラグを設定
-          if (isSameUser && timeDiff < 60000) {
-            // 両方とも「今」の場合のみグループ化
-            const messageTime = formatRelativeTime(
-              message.created_at,
-              currentTime
-            );
-            const prevMessageTime = formatRelativeTime(
-              prevMessage.created_at,
-              currentTime
-            );
+          // 直前メッセージのグループ情報を取得
+          const prevGroupId = initialMessageToGroup[prevMessage.id];
+          const prevGroupTime = initialGroupTime[prevGroupId];
 
-            if (messageTime === '今' && prevMessageTime === '今') {
-              initialGroupStates[`${prevMessage.id}-${message.id}`] = true;
-            }
+          // グループ化条件: 同一ユーザーかつ1分以内かつ直前グループが「今」
+          if (isSameUser && isWithin1Min && prevGroupTime === '今') {
+            // グループ化実行 - 直前のグループに追加
+            initialMessageToGroup[message.id] = prevGroupId;
+            initialGroupToMessages[prevGroupId].push(message.id);
+            console.log(`[初期化] グループ化: ${message.id} -> グループ ${prevGroupId} (直前が「今」)`);
+          } else {
+            // 新しいグループの作成 - 必ず時間表示を「今」に設定
+            const newGroupId = message.id;
+            initialGroupTime[newGroupId] = '今'; // 新しいグループは常に「今」
+            initialMessageToGroup[message.id] = newGroupId;
+            initialGroupToMessages[newGroupId] = [message.id];
+            console.log(`[初期化] 新しいグループ作成: ${message.id} -> グループ ${newGroupId} (時間: 今 - 新グループは常に「今」)`);
           }
         }
 
-        console.log('[初期化] 時間状態:', initialTimeStates);
-        console.log('[初期化] グループ化状態:', initialGroupStates);
+        console.log('[初期化] グループ時間状態:', initialGroupTime);
+        console.log('[初期化] メッセージ→グループ:', initialMessageToGroup);
+        console.log('[初期化] グループ→メッセージ:', initialGroupToMessages);
 
         // 一元管理の状態に設定
         setMessageStates({
-          messageTime: initialTimeStates,
-          groupedState: initialGroupStates,
+          groupTime: initialGroupTime,
+          messageToGroup: initialMessageToGroup,
+          groupToMessages: initialGroupToMessages,
         });
 
         setHasMore(response.data.has_more || false);
@@ -456,29 +473,16 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
 
   const renderMessage = (message: Message, index: number) => {
     const prevMessage = index > 0 ? messages[index - 1] : null;
-    const isSameUser = prevMessage?.user_id === message.user_id;
-    const timeDiff = prevMessage
-      ? new Date(message.created_at).getTime() -
-        new Date(prevMessage.created_at).getTime()
-      : Infinity;
 
-    // 基本のグループ化判定（1分以上離れたら必ず非グループ化）
-    const baseGrouped = isSameUser && timeDiff < 60000;
+    // グループ化状態を確認 - 新しいヘルパー関数を使用
+    const isGrouped = isMessageGrouped(message.id, prevMessage?.id);
 
-    // グループ化状態を確認 - グループ状態が明示的に設定されていればそれを使用
-    const stateKey = prevMessage ? `${prevMessage.id}-${message.id}` : null;
-    const groupState = stateKey
-      ? messageStates.groupedState[stateKey]
-      : undefined;
+    // 時間表示をグループから取得
+    const groupId = getMessageGroupId(message.id);
+    const displayTime = getGroupTime(groupId);
 
-    // 時間表示を取得（存在しなければ現在時刻で計算）
-    const displayTime =
-      messageStates.messageTime[message.id] ||
-      formatRelativeTime(message.created_at, currentTime);
-
-    // 状態が明示的に設定されていればそれを使用、なければ基本判定
-    // グループ化解除は新規メッセージ時にのみ行われるため、ここでは状態を参照するだけ
-    const isGrouped = groupState !== undefined ? groupState : baseGrouped;
+    // デバッグログ: レンダリング時の状態を確認
+    console.log(`[レンダリング] メッセージID: ${message.id}, グループID: ${groupId}, グループ化: ${isGrouped}, 時間表示: "${displayTime}" ${isGrouped ? '(グループ内)' : '(グループ先頭)'}`);
 
     return (
       <Grow in key={message.id} timeout={300}>
@@ -522,8 +526,7 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
                   {message.user_display_name || message.user_username || ''}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {messageStates.messageTime[message.id] ||
-                    formatRelativeTime(message.created_at, currentTime)}
+                  {displayTime}
                 </Typography>
                 {message.is_edited && (
                   <Chip
@@ -626,39 +629,50 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
     );
   };
 
-  // メッセージの時間表示のみを動的に管理（グループ化状態は新規メッセージ送信時のみ判定するため維持）
+  // グループの時間表示のみを動的に更新
   useEffect(() => {
     if (messages.length === 0) return;
 
     setMessageStates((prevStates) => {
-      const updatedTimeStates = { ...prevStates.messageTime };
+      const updatedGroupTime = { ...prevStates.groupTime };
       let hasChanges = false;
 
-      // 全メッセージについて時間表示のみを更新
-      for (let i = 0; i < messages.length; i++) {
-        const message = messages[i];
-        const newTime = formatRelativeTime(message.created_at, currentTime);
+      console.log(`[時間更新] 開始 - ${Object.keys(prevStates.groupTime).length}個のグループを確認`);
 
-        // 時間表示の更新（変更があった場合のみログ出力）
-        if (updatedTimeStates[message.id] !== newTime) {
-          updatedTimeStates[message.id] = newTime;
-          hasChanges = true;
+      // 各グループの時間表示を更新
+      for (const groupId of Object.keys(prevStates.groupTime)) {
+        const groupMessages = prevStates.groupToMessages[groupId] || [];
+        if (groupMessages.length === 0) continue;
+
+        // グループの最初のメッセージの作成時間を基準にする
+        const firstMessageId = groupMessages[0];
+        const firstMessage = messages.find(m => m.id === firstMessageId);
+        
+        if (firstMessage) {
+          const oldTime = updatedGroupTime[groupId];
+          const newTime = formatRelativeTime(firstMessage.created_at, currentTime);
+          
+          // 時間表示の更新（変更があった場合のみ）
+          if (oldTime !== newTime) {
+            updatedGroupTime[groupId] = newTime;
+            hasChanges = true;
+            console.log(`[時間更新] グループID: ${groupId}, ${oldTime} -> ${newTime} (${groupMessages.length}件のメッセージが更新: ${groupMessages.join(', ')})`);
+          }
         }
       }
 
-      if (hasChanges) {
-        return {
-          messageTime: updatedTimeStates,
-          groupedState: prevStates.groupedState, // グループ化状態は変更しない
-        };
-      } else {
-        return prevStates;
-      }
+      console.log(`[時間更新] 完了 - 変更あり: ${hasChanges}`);
+
+      // 変更があった場合のみ状態を更新
+      return hasChanges
+        ? {
+            groupTime: updatedGroupTime,
+            messageToGroup: prevStates.messageToGroup, // メッセージ→グループのマッピングは変更しない
+            groupToMessages: prevStates.groupToMessages, // グループ→メッセージのマッピングは変更しない
+          }
+        : prevStates;
     });
   }, [currentTime, messages]);
-
-  // これ以上のuseEffectは必要ありません。
-  // 上記のuseEffectで時間表示とグループ化状態を同時に更新しています。
 
   if (isLoading && messages.length === 0) {
     console.log('MessageList rendering: LOADING state');
